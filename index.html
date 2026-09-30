@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MelodiEdu - Media Pembelajaran Seni Musik Interaktif</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Poppins & Fredoka -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .font-display {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* 3D Flip Card Effect */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8b5cf6;
+            border-radius: 4px;
+        }
+
+        /* Glowing Effects */
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.35);
+        }
+        .glow-amber {
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+        }
+
+        /* Keyframe Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(3deg); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-light {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
+        }
+        .animate-pulse-bg {
+            animation: pulse-light 6s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="relative overflow-x-hidden pb-12">
+
+    <!-- Background Floating Music Notes -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-20">
+        <i class="fas fa-music text-purple-400 text-6xl absolute top-10 left-10 animate-float" style="animation-delay: 0s;"></i>
+        <i class="fas fa-drum text-amber-400 text-5xl absolute top-1/3 right-12 animate-float" style="animation-delay: 1s;"></i>
+        <i class="fas fa-guitar text-pink-400 text-7xl absolute bottom-20 left-1/4 animate-float" style="animation-delay: 2s;"></i>
+        <i class="fas fa-record-vinyl text-cyan-400 text-6xl absolute top-1/2 left-10 animate-float" style="animation-delay: 1.5s;"></i>
+        <i class="fas fa-sliders text-emerald-400 text-5xl absolute bottom-1/3 right-1/4 animate-float" style="animation-delay: 2.5s;"></i>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-slate-900/85 backdrop-blur-md border-b border-purple-500/20 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-purple-500/30">
+                    <i class="fas fa-headphones"></i>
+                </div>
+                <div>
+                    <h1 class="font-display text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-pink-400 to-purple-300">
+                        MelodiEdu
+                    </h1>
+                    <p class="text-xs text-slate-400">Seni Musik Interaktif SD/SMP</p>
+                </div>
+            </div>
+
+            <!-- Score & Badge Bar -->
+            <div class="flex items-center space-x-4 bg-slate-800/80 px-4 py-2 rounded-2xl border border-slate-700">
+                <div class="flex items-center space-x-2 text-amber-400">
+                    <i class="fas fa-star text-lg"></i>
+                    <span id="global-score" class="font-bold text-lg">0</span>
+                    <span class="text-xs text-slate-400">Poin</span>
+                </div>
+                <div class="h-4 w-px bg-slate-700"></div>
+                <div class="flex items-center space-x-1 text-purple-300 text-xs">
+                    <i class="fas fa-award text-amber-300 text-sm"></i>
+                    <span id="badge-status">Pemula</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Menu Tabs -->
+    <nav class="max-w-7xl mx-auto px-4 mt-6 z-10 relative">
+        <div class="flex flex-wrap gap-2 justify-center bg-slate-900/60 p-2 rounded-2xl border border-slate-800 backdrop-blur-sm">
+            <button onclick="switchTab('flashcards')" id="tab-flashcards" class="nav-tab flex items-center space-x-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all bg-purple-600 text-white shadow-lg">
+                <i class="fas fa-[#ff9f43] fa-clone"></i>
+                <span>1. Flashcards</span>
+            </button>
+            <button onclick="switchTab('benarsalah')" id="tab-benarsalah" class="nav-tab flex items-center space-x-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                <i class="fas fa-check-double"></i>
+                <span>2. Benar / Salah</span>
+            </button>
+            <button onclick="switchTab('jodohkan')" id="tab-jodohkan" class="nav-tab flex items-center space-x-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                <i class="fas fa-[#00d2d3] fa-puzzle-piece"></i>
+                <span>3. Menjodohkan</span>
+            </button>
+            <button onclick="switchTab('minigame')" id="tab-minigame" class="nav-tab flex items-center space-x-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                <i class="fas fa-[#ff6b6b] fa-gamepad"></i>
+                <span>4. Game Musik</span>
+            </button>
+            <button onclick="switchTab('kuis')" id="tab-kuis" class="nav-tab flex items-center space-x-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                <i class="fas fa-graduation-cap"></i>
+                <span>5. Kuis Akhir</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 mt-8 z-10 relative">
+
+        <!-- SECTION 1: FLASHCARDS -->
+        <section id="sec-flashcards" class="tab-content block">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase tracking-wider">Materi Visual</span>
+                <h2 class="font-display text-3xl md:text-4xl font-bold mt-2 text-white">Eksplorasi Alat Musik</h2>
+                <p class="text-slate-400 text-sm mt-1">Klik kartu untuk membalik & dengarkan sampel nada instrumen!</p>
+            </div>
+
+            <!-- Category Filter Buttons -->
+            <div class="flex justify-center gap-2 mb-6 flex-wrap">
+                <button onclick="filterCards('all')" class="fc-filter px-4 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-white border border-purple-500/50">Semua</button>
+                <button onclick="filterCards('tradisional')" class="fc-filter px-4 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">Tradisional</button>
+                <button onclick="filterCards('modern')" class="fc-filter px-4 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">Modern</button>
+            </div>
+
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="flashcards-grid">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- SECTION 2: BENAR / SALAH -->
+        <section id="sec-benarsalah" class="tab-content hidden">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">Uji Cepat</span>
+                <h2 class="font-display text-3xl md:text-4xl font-bold mt-2 text-white">Tantangan Benar atau Salah</h2>
+                <p class="text-slate-400 text-sm mt-1">Tentukan apakah pernyataan mengenai konsep musik di bawah ini Benar atau Salah!</p>
+            </div>
+
+            <div class="max-w-2xl mx-auto bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl relative">
+                <!-- Progress bar -->
+                <div class="w-full bg-slate-800 h-2 rounded-full mb-6 overflow-hidden">
+                    <div id="tf-progress" class="bg-gradient-to-r from-amber-400 to-pink-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+
+                <div id="tf-box">
+                    <div class="flex justify-between items-center text-xs text-slate-400 mb-4">
+                        <span id="tf-count">Soal 1 dari 5</span>
+                        <span class="text-amber-400 font-semibold">+20 Poin / Soal</span>
+                    </div>
+
+                    <div class="bg-slate-800/60 p-6 rounded-2xl border border-slate-700/50 mb-8 min-h-[140px] flex items-center justify-center text-center">
+                        <p id="tf-question" class="text-lg md:text-xl font-medium text-slate-100 leading-relaxed"></p>
+                    </div>
+
+                    <!-- Options Buttons -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="submitTF(true)" class="group py-4 px-6 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 hover:border-emerald-500 text-emerald-300 font-bold text-lg transition flex items-center justify-center space-x-3">
+                            <i class="fas fa-check-circle text-2xl group-hover:scale-110 transition"></i>
+                            <span>BENAR</span>
+                        </button>
+                        <button onclick="submitTF(false)" class="group py-4 px-6 rounded-2xl bg-rose-600/20 hover:bg-rose-600/40 border border-rose-500/40 hover:border-rose-500 text-rose-300 font-bold text-lg transition flex items-center justify-center space-x-3">
+                            <i class="fas fa-times-circle text-2xl group-hover:scale-110 transition"></i>
+                            <span>SALAH</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Feedback Box -->
+                <div id="tf-feedback" class="hidden text-center py-6">
+                    <div id="tf-feedback-icon" class="text-6xl mb-3"></div>
+                    <h3 id="tf-feedback-title" class="text-2xl font-bold mb-2"></h3>
+                    <p id="tf-feedback-explanation" class="text-slate-300 text-sm mb-6 bg-slate-800 p-4 rounded-xl"></p>
+                    <button onclick="nextTF()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-purple-600/30">
+                        Soal Berikutnya <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Complete Box -->
+                <div id="tf-complete" class="hidden text-center py-8">
+                    <div class="text-6xl text-amber-400 mb-4 animate-bounce"><i class="fas fa-trophy"></i></div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Selesai! Tinjauan Cepat Tuntas</h3>
+                    <p id="tf-final-text" class="text-slate-300 mb-6"></p>
+                    <button onclick="resetTF()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 px-6 rounded-xl border border-slate-700">
+                        <i class="fas fa-redo mr-2"></i> Ulangi Tantangan
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: MENJODOHKAN -->
+        <section id="sec-jodohkan" class="tab-content hidden">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="px-4 py-1.5 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 uppercase tracking-wider">Aktivitas Asosiasi</span>
+                <h2 class="font-display text-3xl md:text-4xl font-bold mt-2 text-white">Menjodohkan Kategori Musik</h2>
+                <p class="text-slate-400 text-sm mt-1">Pilih item di sebelah **Kiri**, lalu pilih pasangan yang cocok di sebelah **Kanan**!</p>
+            </div>
+
+            <div class="max-w-4xl mx-auto bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                    
+                    <!-- Left Column (Items) -->
+                    <div>
+                        <h3 class="text-amber-300 font-bold text-sm uppercase tracking-wider mb-4 flex items-center">
+                            <i class="fas fa-music mr-2"></i> Alat Musik / Istilah
+                        </h3>
+                        <div class="space-y-3" id="match-left-container">
+                            <!-- Injected JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column (Targets) -->
+                    <div>
+                        <h3 class="text-cyan-300 font-bold text-sm uppercase tracking-wider mb-4 flex items-center">
+                            <i class="fas fa-tags mr-2"></i> Sumber Bunyi / Cara Main
+                        </h3>
+                        <div class="space-y-3" id="match-right-container">
+                            <!-- Injected JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Matching Status Footer -->
+                <div class="mt-8 pt-6 border-t border-slate-800 flex flex-wrap justify-between items-center gap-4">
+                    <div class="text-sm text-slate-400">
+                        Terjodohkan: <span id="matched-count" class="text-cyan-400 font-bold">0</span> / 5
+                    </div>
+                    <button onclick="resetMatching()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700">
+                        <i class="fas fa-sync-alt mr-1"></i> Acak Ulang
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: MINI GAME (STUDIO XYLOPHONE & TEBAK NADA) -->
+        <section id="sec-minigame" class="tab-content hidden">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="px-4 py-1.5 rounded-full text-xs font-semibold bg-pink-500/20 text-pink-300 border border-pink-500/30 uppercase tracking-wider">Game Interaktif</span>
+                <h2 class="font-display text-3xl md:text-4xl font-bold mt-2 text-white">Studio Xylophone Virtual</h2>
+                <p class="text-slate-400 text-sm mt-1">Mainkan bilah nada berwarna di bawah ini atau selesaikan tantangan lagu!</p>
+            </div>
+
+            <div class="max-w-4xl mx-auto bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
+                <!-- Mode Switcher -->
+                <div class="flex justify-center space-x-3 mb-8">
+                    <button onclick="setGameMode('free')" id="btn-mode-free" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-purple-600 text-white shadow-lg">
+                        <i class="fas fa-play mr-2"></i> Mode Bebas
+                    </button>
+                    <button onclick="setGameMode('challenge')" id="btn-mode-challenge" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 text-slate-400 border border-slate-700 hover:text-white">
+                        <i class="fas fa-bullseye mr-2"></i> Tantangan Lagu Daerah
+                    </button>
+                </div>
+
+                <!-- Challenge Banner (Only shown in challenge mode) -->
+                <div id="challenge-banner" class="hidden bg-slate-800/80 p-4 rounded-2xl border border-pink-500/30 mb-8 text-center">
+                    <div class="text-xs text-pink-400 font-semibold uppercase tracking-wider">Tantangan Lagu: "Ibu Kita Kartini"</div>
+                    <p class="text-slate-200 font-medium text-sm mt-1">Tekan tombol nada berikut sesuai urutan:</p>
+                    <div class="flex justify-center items-center gap-2 mt-3 font-mono text-lg font-bold" id="challenge-sequence">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Xylophone Keys Container -->
+                <div class="flex justify-center items-end gap-2 md:gap-4 py-8 px-2 overflow-x-auto min-h-[280px]">
+                    <!-- C4 -->
+                    <button onclick="playXylophone('C4')" class="xylo-key w-12 md:w-16 h-64 bg-rose-500 hover:bg-rose-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">Do</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">C4</span>
+                    </button>
+                    <!-- D4 -->
+                    <button onclick="playXylophone('D4')" class="xylo-key w-12 md:w-16 h-60 bg-orange-500 hover:bg-orange-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">Re</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">D4</span>
+                    </button>
+                    <!-- E4 -->
+                    <button onclick="playXylophone('E4')" class="xylo-key w-12 md:w-16 h-56 bg-amber-500 hover:bg-amber-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">Mi</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">E4</span>
+                    </button>
+                    <!-- F4 -->
+                    <button onclick="playXylophone('F4')" class="xylo-key w-12 md:w-16 h-52 bg-emerald-500 hover:bg-emerald-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">Fa</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">F4</span>
+                    </button>
+                    <!-- G4 -->
+                    <button onclick="playXylophone('G4')" class="xylo-key w-12 md:w-16 h-48 bg-teal-500 hover:bg-teal-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">Sol</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">G4</span>
+                    </button>
+                    <!-- A4 -->
+                    <button onclick="playXylophone('A4')" class="xylo-key w-12 md:w-16 h-44 bg-cyan-500 hover:bg-cyan-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">La</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">A4</span>
+                    </button>
+                    <!-- B4 -->
+                    <button onclick="playXylophone('B4')" class="xylo-key w-12 md:w-16 h-40 bg-purple-500 hover:bg-purple-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">Si</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">B4</span>
+                    </button>
+                    <!-- C5 -->
+                    <button onclick="playXylophone('C5')" class="xylo-key w-12 md:w-16 h-36 bg-pink-500 hover:bg-pink-400 rounded-2xl flex flex-col justify-between p-3 text-white font-bold shadow-lg transition-all transform active:scale-95 group">
+                        <span class="text-xl font-display">Do'</span>
+                        <span class="text-xs opacity-70 group-hover:opacity-100">C5</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: KUIS AKHIR -->
+        <section id="sec-kuis" class="tab-content hidden">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">Evaluasi Akhir</span>
+                <h2 class="font-display text-3xl md:text-4xl font-bold mt-2 text-white">Ujian Pengetahuan Musik</h2>
+                <p class="text-slate-400 text-sm mt-1">Uji pemahaman keseluruhan materi Seni Musik untuk mendapatkan Sertifikat Kelulusan!</p>
+            </div>
+
+            <div class="max-w-3xl mx-auto bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl relative">
+                
+                <!-- Quiz Start Screen -->
+                <div id="quiz-intro-screen" class="text-center py-6">
+                    <div class="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-4xl text-white shadow-xl glow-purple">
+                        <i class="fas fa-file-signature"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Siap Memulai Kuis?</h3>
+                    <p class="text-slate-300 text-sm max-w-md mx-auto mb-6">Kuis terdiri dari 5 pertanyaan pilihan ganda seputar alat musik, sumber bunyi, dan teknik memainkan.</p>
+                    <button onclick="startFinalQuiz()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3.5 px-8 rounded-2xl shadow-lg transition transform hover:scale-105">
+                        Mulai Kuis Sekarang <i class="fas fa-play ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Quiz Question Screen -->
+                <div id="quiz-active-screen" class="hidden">
+                    <div class="flex justify-between items-center mb-4 text-xs text-slate-400">
+                        <span id="quiz-q-num">Pertanyaan 1 dari 5</span>
+                        <span id="quiz-score-live" class="text-emerald-400 font-bold">Skor: 0</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full mb-8 overflow-hidden">
+                        <div id="quiz-progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full w-0 transition-all duration-300"></div>
+                    </div>
+
+                    <h3 id="quiz-question-text" class="text-xl md:text-2xl font-semibold text-white mb-6 leading-relaxed"></h3>
+
+                    <!-- Options -->
+                    <div id="quiz-options-container" class="space-y-3">
+                        <!-- Injected by JS -->
+                    </div>
+
+                    <div class="mt-8 text-right hidden" id="quiz-next-btn-wrap">
+                        <button onclick="nextQuizQuestion()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg">
+                            Lanjut <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Results Screen -->
+                <div id="quiz-result-screen" class="hidden text-center py-8">
+                    <div id="quiz-result-icon" class="text-7xl mb-4"></div>
+                    <h3 class="text-3xl font-bold text-white mb-2">Evaluasi Selesai!</h3>
+                    <p class="text-slate-400 text-sm mb-4">Nilai Akhir Anda:</p>
+                    <div class="text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-pink-400 to-purple-300 mb-6" id="quiz-final-score">
+                        0
+                    </div>
+                    <p id="quiz-feedback-msg" class="text-slate-200 text-base mb-8 max-w-md mx-auto bg-slate-800 p-4 rounded-2xl border border-slate-700"></p>
+
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <button onclick="resetFinalQuiz()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 px-6 rounded-xl border border-slate-700">
+                            <i class="fas fa-redo mr-2"></i> Coba Lagi
+                        </button>
+                        <button onclick="openCertificateModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold py-3 px-6 rounded-xl shadow-lg">
+                            <i class="fas fa-certificate mr-2"></i> Lihat Sertifikat
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Certificate Modal -->
+    <div id="cert-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-8 max-w-2xl w-full text-center relative shadow-2xl">
+            <button onclick="closeModal('cert-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="border-4 border-dashed border-amber-500/30 p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-purple-950">
+                <i class="fas fa-award text-5xl text-amber-400 mb-3"></i>
+                <h2 class="font-display text-3xl font-bold text-amber-300 uppercase tracking-widest">Sertifikat Kelulusan</h2>
+                <p class="text-xs text-slate-400 mt-1">Diberikan atas kelulusan Media Pembelajaran Seni Musik Interaktif</p>
+                <div class="my-6">
+                    <p class="text-sm text-slate-300">Selamat kepada siswa berprestasi:</p>
+                    <p class="text-2xl font-bold text-white mt-1 underline decoration-amber-500 decoration-2">Siswa Hebat MelodiEdu</p>
+                </div>
+                <p class="text-xs text-slate-300 max-w-md mx-auto">
+                    Telah menyelesaikan modul materi, aktivitas menjodohkan, tantangan studio musik, serta kuis akhir dengan nilai yang memuaskan.
+                </p>
+                <div class="mt-8 flex justify-between items-center text-xs text-slate-500 border-t border-slate-800 pt-4">
+                    <span>Pengajar: Guru Seni Musik</span>
+                    <span>MelodiEdu Web App</span>
+                </div>
+            </div>
+            <button onclick="window.print()" class="mt-6 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 px-6 rounded-xl shadow-lg text-sm">
+                <i class="fas fa-print mr-2"></i> Cetak / Simpan PDF
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let globalScore = 0;
+        let audioCtx = null;
+
+        // Initialize Web Audio API on first interaction
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        document.addEventListener('click', initAudio, { once: true });
+
+        // Synthesize Musical Tones via Web Audio API (No external sound files required!)
+        function playTone(freq, type = 'sine', duration = 0.5) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log('Audio playback error:', e);
+            }
+        }
+
+        // Sound Effects Helper
+        function playFX(sound) {
+            if (sound === 'correct') {
+                playTone(523.25, 'triangle', 0.1);
+                setTimeout(() => playTone(659.25, 'triangle', 0.2), 100);
+            } else if (sound === 'wrong') {
+                playTone(220, 'sawtooth', 0.2);
+                setTimeout(() => playTone(180, 'sawtooth', 0.3), 150);
+            } else if (sound === 'flip') {
+                playTone(400, 'sine', 0.05);
+            }
+        }
+
+        function addPoints(pts) {
+            globalScore += pts;
+            document.getElementById('global-score').innerText = globalScore;
+            
+            // Update Badge
+            const badgeEl = document.getElementById('badge-status');
+            if (globalScore >= 150) badgeEl.innerText = "Maestro Musik 👑";
+            else if (globalScore >= 80) badgeEl.innerText = "Musisi Handal 🎸";
+            else if (globalScore >= 40) badgeEl.innerText = "Siswa Rajin 🎵";
+        }
+
+        // Navigation Tab Switching Logic
+        function switchTab(tabName) {
+            playFX('flip');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('bg-purple-600', 'text-white', 'shadow-lg');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('bg-purple-600', 'text-white', 'shadow-lg');
+            activeBtn.classList.remove('text-slate-400');
+        }
+
+        // Flashcards Data
+        const flashcardsData = [
+            { id: 1, name: 'Angklung', category: 'tradisional', icon: 'fa-cubes', type: 'Idiofon', origin: 'Jawa Barat', play: 'Digoyang', noteFreq: 523.25, bg: 'from-amber-600 to-orange-700' },
+            { id: 2, name: 'Gitar Accoustic', category: 'modern', icon: 'fa-guitar', type: 'Kordofon', origin: 'Modern', play: 'Dipetik', noteFreq: 329.63, bg: 'from-purple-600 to-indigo-700' },
+            { id: 3, name: 'Gendang', category: 'tradisional', icon: 'fa-drum', type: 'Membranofon', origin: 'Indonesia', play: 'Ditepuk', noteFreq: 150.00, bg: 'from-rose-600 to-pink-700' },
+            { id: 4, name: 'Suling / Flute', category: 'tradisional', icon: 'fa-wind', type: 'Aerofon', origin: 'Nusantara', play: 'Ditiup', noteFreq: 659.25, bg: 'from-emerald-600 to-teal-700' },
+            { id: 5, name: 'Biola', category: 'modern', icon: 'fa-music', type: 'Kordofon', origin: 'Eropa', play: 'Digesek', noteFreq: 440.00, bg: 'from-cyan-600 to-blue-700' },
+            { id: 6, name: 'Piano / Keyboard', category: 'modern', icon: 'fa-[#ff9f43] fa-keyboard', type: 'Elektrofon / Akustik', origin: 'Modern', play: 'Ditekan', noteFreq: 261.63, bg: 'from-violet-600 to-purple-800' }
+        ];
+
+        function renderFlashcards(filter = 'all') {
+            const grid = document.getElementById('flashcards-grid');
+            grid.innerHTML = '';
+
+            const filtered = filter === 'all' ? flashcardsData : flashcardsData.filter(c => c.category === filter);
+
+            filtered.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'perspective-1000 h-72 cursor-pointer group';
+                cardEl.onclick = () => {
+                    const inner = cardEl.querySelector('.card-inner');
+                    inner.classList.toggle('rotate-y-180');
+                    playTone(card.noteFreq, 'triangle', 0.4);
+                };
+
+                cardEl.innerHTML = `
+                    <div class="card-inner w-full h-full transform-style-3d relative rounded-3xl shadow-xl">
+                        <!-- Front -->
+                        <div class="absolute inset-0 backface-hidden bg-gradient-to-br ${card.bg} rounded-3xl p-6 flex flex-col justify-between border border-white/10">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs uppercase font-bold tracking-widest text-white/80 bg-black/20 px-3 py-1 rounded-full">${card.category}</span>
+                                <i class="fas fa-sync-alt text-white/60 text-sm"></i>
+                            </div>
+                            <div class="text-center my-2">
+                                <i class="fas ${card.icon} text-6xl text-white mb-3"></i>
+                                <h3 class="font-display text-2xl font-bold text-white">${card.name}</h3>
+                            </div>
+                            <div class="text-center text-xs text-white/80 bg-black/20 py-2 rounded-xl">
+                                Klik untuk info & bunyi
+                            </div>
+                        </div>
+                        <!-- Back -->
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-slate-800 border border-purple-500/40 rounded-3xl p-6 flex flex-col justify-between text-slate-200">
+                            <div>
+                                <h4 class="font-display text-xl font-bold text-amber-300 mb-2">${card.name}</h4>
+                                <div class="space-y-2 text-xs">
+                                    <p><strong class="text-purple-300">Sumber Bunyi:</strong> ${card.type}</p>
+                                    <p><strong class="text-purple-300">Asal Daerah:</strong> ${card.origin}</p>
+                                    <p><strong class="text-purple-300">Cara Main:</strong> ${card.play}</p>
+                                </div>
+                            </div>
+                            <button onclick="event.stopPropagation(); playTone(${card.noteFreq}, 'sine', 0.6);" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-xl text-xs transition">
+                                <i class="fas fa-volume-up mr-2"></i> Bunyikan Nada
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function filterCards(cat) {
+            document.querySelectorAll('.fc-filter').forEach(b => {
+                b.classList.remove('bg-slate-800', 'text-white', 'border-purple-500/50');
+                b.classList.add('bg-slate-800', 'text-slate-400', 'border-slate-700');
+            });
+            event.target.classList.add('text-white', 'border-purple-500/50');
+            renderFlashcards(cat);
+        }
+
+        // True/False Questions Data
+        const tfQuestions = [
+            { q: "Alat musik Angklung dimainkan dengan cara dipetik.", ans: false, exp: "Salah! Angklung dimainkan dengan cara digoyang sehingga tabung bambunya bentrok dan berbunyi." },
+            { q: "Alat musik Kordofon adalah alat musik yang sumber bunyinya berasal dari dawai/senar.", ans: true, exp: "Benar! Kordofon menggunakan getaran senar seperti gitar, biola, dan kecapi." },
+            { q: "Gendang dan Drum termasuk dalam golongan alat musik Aerofon.", ans: false, exp: "Salah! Gendang dan Drum adalah Membranofon karena bunyinya dari getaran selaput/membran." },
+            { q: "Suling bambu menghasilkan suara dari getaran udara (Aerofon).", ans: true, exp: "Benar! Aerofon adalah kelompok alat musik yang sumber bunyinya berasal dari hembusan udara." },
+            { q: "Pianika termasuk alat musik instrumen tiup yang dikeyboard.", ans: true, exp: "Benar! Pianika ditiup melalui selang dan tutsnya ditekan untuk menghasilkan nada." }
+        ];
+
+        let tfIndex = 0;
+
+        function loadTFQuestion() {
+            const current = tfQuestions[tfIndex];
+            document.getElementById('tf-count').innerText = `Soal ${tfIndex + 1} dari ${tfQuestions.length}`;
+            document.getElementById('tf-question').innerText = `"${current.q}"`;
+            document.getElementById('tf-progress').style.width = `${((tfIndex + 1) / tfQuestions.length) * 100}%`;
+            
+            document.getElementById('tf-box').classList.remove('hidden');
+            document.getElementById('tf-feedback').classList.add('hidden');
+            document.getElementById('tf-complete').classList.add('hidden');
+        }
+
+        function submitTF(userAns) {
+            const current = tfQuestions[tfIndex];
+            const isCorrect = userAns === current.ans;
+
+            document.getElementById('tf-box').classList.add('hidden');
+            document.getElementById('tf-feedback').classList.remove('hidden');
+
+            const iconEl = document.getElementById('tf-feedback-icon');
+            const titleEl = document.getElementById('tf-feedback-title');
+            
+            if (isCorrect) {
+                playFX('correct');
+                addPoints(20);
+                iconEl.innerHTML = '<i class="fas fa-circle-check text-emerald-400"></i>';
+                titleEl.innerText = "Jawaban Tepat! (+20 Poin)";
+                titleEl.className = "text-2xl font-bold mb-2 text-emerald-400";
+            } else {
+                playFX('wrong');
+                iconEl.innerHTML = '<i class="fas fa-circle-xmark text-rose-400"></i>';
+                titleEl.innerText = "Kurang Tepat!";
+                titleEl.className = "text-2xl font-bold mb-2 text-rose-400";
+            }
+
+            document.getElementById('tf-feedback-explanation').innerText = current.exp;
+        }
+
+        function nextTF() {
+            tfIndex++;
+            if (tfIndex < tfQuestions.length) {
+                loadTFQuestion();
+            } else {
+                document.getElementById('tf-feedback').classList.add('hidden');
+                document.getElementById('tf-complete').classList.remove('hidden');
+                document.getElementById('tf-final-text').innerText = "Selamat! Anda telah menyelesaikan seluruh latihan Benar / Salah.";
+                confetti();
+            }
+        }
+
+        function resetTF() {
+            tfIndex = 0;
+            loadTFQuestion();
+        }
+
+        // Matching Data
+        const matchData = [
+            { id: 1, item: "Gitar", category: "Dipetik (Kordofon)" },
+            { id: 2, item: "Suling", category: "Ditiup (Aerofon)" },
+            { id: 3, item: "Gendang", category: "Ditepuk (Membranofon)" },
+            { id: 4, item: "Angklung", category: "Digoyang (Idiofon)" },
+            { id: 5, item: "Keyboard", category: "Listrik (Elektrofon)" }
+        ];
+
+        let selectedLeft = null;
+        let matchedPairsCount = 0;
+
+        function renderMatching() {
+            const leftWrap = document.getElementById('match-left-container');
+            const rightWrap = document.getElementById('match-right-container');
+            leftWrap.innerHTML = ''; rightWrap.innerHTML = '';
+
+            // Shuffle right column
+            const shuffledRight = [...matchData].sort(() => Math.random() - 0.5);
+
+            matchData.forEach(d => {
+                const btn = document.createElement('button');
+                btn.className = `match-left-btn w-full p-4 rounded-2xl border border-slate-700 bg-slate-800 text-left text-sm font-semibold transition hover:border-purple-500`;
+                btn.dataset.id = d.id;
+                btn.innerHTML = `<i class="fas fa-music mr-3 text-purple-400"></i> ${d.item}`;
+                btn.onclick = () => selectLeftMatch(btn, d.id);
+                leftWrap.appendChild(btn);
+            });
+
+            shuffledRight.forEach(d => {
+                const btn = document.createElement('button');
+                btn.className = `match-right-btn w-full p-4 rounded-2xl border border-slate-700 bg-slate-800 text-left text-sm font-semibold transition hover:border-cyan-500`;
+                btn.dataset.targetId = d.id;
+                btn.innerHTML = `<i class="fas fa-tag mr-3 text-cyan-400"></i> ${d.category}`;
+                btn.onclick = () => selectRightMatch(btn, d.id);
+                rightWrap.appendChild(btn);
+            });
+        }
+
+        function selectLeftMatch(btn, id) {
+            playFX('flip');
+            document.querySelectorAll('.match-left-btn').forEach(b => b.classList.remove('border-amber-400', 'bg-amber-500/20'));
+            btn.classList.add('border-amber-400', 'bg-amber-500/20');
+            selectedLeft = { btn, id };
+        }
+
+        function selectRightMatch(btn, targetId) {
+            if (!selectedLeft) return;
+
+            if (selectedLeft.id === targetId) {
+                // Correct match
+                playFX('correct');
+                addPoints(15);
+                
+                selectedLeft.btn.classList.remove('border-amber-400', 'bg-amber-500/20');
+                selectedLeft.btn.classList.add('border-emerald-500', 'bg-emerald-500/20', 'text-emerald-300', 'pointer-events-none');
+                selectedLeft.btn.innerHTML += ' <i class="fas fa-check float-right text-emerald-400"></i>';
+
+                btn.classList.add('border-emerald-500', 'bg-emerald-500/20', 'text-emerald-300', 'pointer-events-none');
+                btn.innerHTML += ' <i class="fas fa-check float-right text-emerald-400"></i>';
+
+                matchedPairsCount++;
+                document.getElementById('matched-count').innerText = matchedPairsCount;
+
+                if (matchedPairsCount === matchData.length) {
+                    setTimeout(() => { confetti(); }, 300);
+                }
+            } else {
+                // Wrong match
+                playFX('wrong');
+                btn.classList.add('border-rose-500', 'bg-rose-500/20');
+                setTimeout(() => {
+                    btn.classList.remove('border-rose-500', 'bg-rose-500/20');
+                }, 500);
+            }
+            selectedLeft = null;
+        }
+
+        function resetMatching() {
+            selectedLeft = null;
+            matchedPairsCount = 0;
+            document.getElementById('matched-count').innerText = 0;
+            renderMatching();
+        }
+
+        // Notes Frequencies Mapping
+        const noteFreqs = {
+            'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23,
+            'G4': 392.00, 'A4': 440.00, 'B4': 493.88, 'C5': 523.25
+        };
+
+        const noteNames = {
+            'C4': 'Do', 'D4': 'Re', 'E4': 'Mi', 'F4': 'Fa',
+            'G4': 'Sol', 'A4': 'La', 'B4': 'Si', 'C5': "Do'"
+        };
+
+        let gameMode = 'free';
+        // Challenge sequence: C4 C4 D4 E4 ... (Ibu Kita Kartini fragment: C4 D4 E4 F4 G4)
+        const challengeSeq = ['C4', 'D4', 'E4', 'F4', 'G4', 'E4', 'C4'];
+        let challengeStep = 0;
+
+        function playXylophone(note) {
+            playTone(noteFreqs[note], 'sine', 0.6);
+
+            if (gameMode === 'challenge') {
+                if (note === challengeSeq[challengeStep]) {
+                    challengeStep++;
+                    updateChallengeUI();
+                    if (challengeStep >= challengeSeq.length) {
+                        playFX('correct');
+                        addPoints(50);
+                        confetti();
+                        setTimeout(() => {
+                            alert("Luar biasa! Kamu berhasil menyanyikan petikan nada Ibu Kita Kartini!");
+                            challengeStep = 0;
+                            updateChallengeUI();
+                        }, 400);
+                    }
+                } else {
+                    playFX('wrong');
+                    challengeStep = 0;
+                    updateChallengeUI();
+                }
+            }
+        }
+
+        function setGameMode(mode) {
+            gameMode = mode;
+            const btnFree = document.getElementById('btn-mode-free');
+            const btnChallenge = document.getElementById('btn-mode-challenge');
+            const banner = document.getElementById('challenge-banner');
+
+            if (mode === 'free') {
+                btnFree.className = 'px-5 py-2.5 rounded-xl font-bold text-xs bg-purple-600 text-white shadow-lg';
+                btnChallenge.className = 'px-5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 text-slate-400 border border-slate-700 hover:text-white';
+                banner.classList.add('hidden');
+            } else {
+                btnChallenge.className = 'px-5 py-2.5 rounded-xl font-bold text-xs bg-pink-600 text-white shadow-lg';
+                btnFree.className = 'px-5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 text-slate-400 border border-slate-700 hover:text-white';
+                banner.classList.remove('hidden');
+                challengeStep = 0;
+                updateChallengeUI();
+            }
+        }
+
+        function updateChallengeUI() {
+            const seqWrap = document.getElementById('challenge-sequence');
+            seqWrap.innerHTML = '';
+            challengeSeq.forEach((note, idx) => {
+                const badge = document.createElement('span');
+                badge.className = `px-3 py-1 rounded-lg text-xs ${idx < challengeStep ? 'bg-emerald-500 text-white' : idx === challengeStep ? 'bg-pink-500 text-white animate-bounce' : 'bg-slate-700 text-slate-400'}`;
+                badge.innerText = `${noteNames[note]}`;
+                seqWrap.appendChild(badge);
+            });
+        }
+
+        const finalQuizData = [
+            {
+                q: "Alat musik mana yang tergolong ke dalam kelompok Kordofon (sumber bunyi senar)?",
+                opts: ["Suling Bambu", "Gitar Akustik", "Gendang", "Angklung"],
+                ans: 1
+            },
+            {
+                q: "Angklung adalah alat musik tradisional Indonesia yang berasal dari provinsi...",
+                opts: ["Jawa Tengah", "Jawa Barat", "Sumatera Utara", "Bali"],
+                ans: 1
+            },
+            {
+                q: "Istilah untuk alat musik yang sumber bunyinya berasal dari hembusan udara adalah...",
+                opts: ["Membranofon", "Idiofon", "Aerofon", "Elektrofon"],
+                ans: 2
+            },
+            {
+                q: "Gendang menghasilkan suara dari getaran selaput tipis. Golongan ini disebut...",
+                opts: ["Membranofon", "Kordofon", "Idiofon", "Aerofon"],
+                ans: 0
+            },
+            {
+                q: "Urutan tangga nada diatonis standar Do - Re - Mi - Fa - Sol - La - Si terdiri dari ... nada.",
+                opts: ["5 Nada", "7 Nada", "12 Nada", "8 Nada"],
+                ans: 1
+            }
+        ];
+
+        let quizQIndex = 0;
+        let quizScore = 0;
+
+        function startFinalQuiz() {
+            quizQIndex = 0;
+            quizScore = 0;
+            document.getElementById('quiz-intro-screen').classList.add('hidden');
+            document.getElementById('quiz-result-screen').classList.add('hidden');
+            document.getElementById('quiz-active-screen').classList.remove('hidden');
+            loadQuizQuestion();
+        }
+
+        function loadQuizQuestion() {
+            const current = finalQuizData[quizQIndex];
+            document.getElementById('quiz-q-num').innerText = `Pertanyaan ${quizQIndex + 1} dari ${finalQuizData.length}`;
+            document.getElementById('quiz-score-live').innerText = `Skor: ${quizScore}`;
+            document.getElementById('quiz-progress-bar').style.width = `${((quizQIndex + 1) / finalQuizData.length) * 100}%`;
+            document.getElementById('quiz-question-text').innerText = current.q;
+
+            const optsWrap = document.getElementById('quiz-options-container');
+            optsWrap.innerHTML = '';
+
+            current.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `quiz-opt-btn w-full p-4 rounded-2xl border border-slate-700 bg-slate-800 hover:border-purple-500 text-left text-sm text-slate-200 transition font-medium flex items-center space-x-3`;
+                btn.innerHTML = `
+                    <span class="w-8 h-8 rounded-xl bg-slate-700 flex items-center justify-center font-bold text-xs text-purple-300">${String.fromCharCode(65 + idx)}</span>
+                    <span>${opt}</span>
+                `;
+                btn.onclick = () => selectQuizOpt(idx, btn);
+                optsWrap.appendChild(btn);
+            });
+
+            document.getElementById('quiz-next-btn-wrap').classList.add('hidden');
+        }
+
+        function selectQuizOpt(selectedIdx, btnEl) {
+            const current = finalQuizData[quizQIndex];
+            const allOpts = document.querySelectorAll('.quiz-opt-btn');
+
+            allOpts.forEach(b => b.classList.add('pointer-events-none'));
+
+            if (selectedIdx === current.ans) {
+                playFX('correct');
+                quizScore += 20;
+                btnEl.classList.add('border-emerald-500', 'bg-emerald-500/20', 'text-emerald-300');
+            } else {
+                playFX('wrong');
+                btnEl.classList.add('border-rose-500', 'bg-rose-500/20', 'text-rose-300');
+                allOpts[current.ans].classList.add('border-emerald-500', 'bg-emerald-500/20', 'text-emerald-300');
+            }
+
+            document.getElementById('quiz-score-live').innerText = `Skor: ${quizScore}`;
+            document.getElementById('quiz-next-btn-wrap').classList.remove('hidden');
+        }
+
+        function nextQuizQuestion() {
+            quizQIndex++;
+            if (quizQIndex < finalQuizData.length) {
+                loadQuizQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            addPoints(quizScore);
+            document.getElementById('quiz-active-screen').classList.add('hidden');
+            document.getElementById('quiz-result-screen').classList.remove('hidden');
+
+            document.getElementById('quiz-final-score').innerText = quizScore;
+            const iconWrap = document.getElementById('quiz-result-icon');
+            const msgWrap = document.getElementById('quiz-feedback-msg');
+
+            if (quizScore >= 80) {
+                iconWrap.innerHTML = '<i class="fas fa-trophy text-amber-400 animate-bounce"></i>';
+                msgWrap.innerText = "Luar biasa! Pemahaman Seni Musikmu sangat matang. Kamu berhak atas Sertifikat Kelulusan!";
+                confetti();
+            } else {
+                iconWrap.innerHTML = '<i class="fas fa-medal text-purple-400"></i>';
+                msgWrap.innerText = "Kerja bagus! Pelajari kembali flashcards dan materi untuk meningkatkan nilaimu.";
+            }
+        }
+
+        function resetFinalQuiz() {
+            startFinalQuiz();
+        }
+
+        function openCertificateModal() {
+            document.getElementById('cert-modal').classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFlashcards();
+            loadTFQuestion();
+            renderMatching();
+        });
+    </script>
+</body>
+</html>
